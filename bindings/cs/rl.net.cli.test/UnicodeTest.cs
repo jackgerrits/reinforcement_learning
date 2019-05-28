@@ -368,6 +368,46 @@ namespace Rl.Net.Cli.Test
             Run_LiveModelChooseRankWithFlags_Test(liveModel, PseudoLocEventId, PseudoLocContextJsonWithPdf);
         }
 
+        private void Run_LiveModelRequestDecision_Test(LiveModel liveModel, string contextJson)
+        {
+            NativeMethods.LiveModelRequestDecisionOverride =
+                (IntPtr liveModelPtr, IntPtr contextJsonPtr, IntPtr rankingResponse, IntPtr ApiStatus) =>
+                {
+                    string contextJsonMarshalledBack = NativeMethods.StringMarshallingFunc(contextJsonPtr);
+                    Assert.AreEqual(contextJson, contextJsonMarshalledBack, "Marshalling contextJson does not work properly in LiveModelRequestDecision");
+
+                    return NativeMethods.SuccessStatus;
+                };
+
+            liveModel.RequestDecision(contextJson);
+        }
+
+        private void Run_LiveModelRequestDecisionWithFlags_Test(LiveModel liveModel, string contextJson)
+        {
+            NativeMethods.LiveModelRequestDecisionWithFlagsOverride =
+                (IntPtr liveModelPtr, IntPtr contextJsonPtr, uint flags, IntPtr rankingResponse, IntPtr ApiStatus) =>
+                {
+                    string contextJsonMarshalledBack = NativeMethods.StringMarshallingFunc(contextJsonPtr);
+                    Assert.AreEqual(contextJson, contextJsonMarshalledBack, "Marshalling contextJson does not work properly in LiveModelRequestDecisionWithFlags");
+
+                    return NativeMethods.SuccessStatus;
+                };
+
+            liveModel.RequestDecision(contextJson, ActionFlags.Deferred);
+        }
+
+        [TestMethod]
+        public void Test_LiveModel_RequestDecision()
+        {
+            LiveModel liveModel = this.ConfigureLiveModel();
+
+            Run_LiveModelRequestDecision_Test(liveModel, PseudoLocContextJsonWithPdf);
+            Run_LiveModelRequestDecisionWithFlags_Test(liveModel, PseudoLocContextJsonWithPdf);
+        }
+
+        // TODO: Create a real CCB context json and add an E2E test (pending CCB E2E and
+        // clarity around sample mode.)
+
         private void Run_LiveModelReportActionTaken_Test(LiveModel liveModel, string eventId)
         {
             NativeMethods.LiveModelReportActionTakenOverride =
