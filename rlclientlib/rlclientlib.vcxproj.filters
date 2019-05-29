@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="model_mgmt\model_downloader.cc" />
@@ -40,6 +40,7 @@
     <ClCompile Include="vw_model\pdf_model.cc" />
     <ClCompile Include="sampling.cc" />
     <ClCompile Include="time_helper.cc" />
+    <ClCompile Include="decision_response.cc" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\api_status.h" />
@@ -99,6 +100,7 @@
     <ClInclude Include="vw_model\pdf_model.h" />
     <ClInclude Include="sampling.h" />
     <ClInclude Include="time_helper.h" />
+    <ClInclude Include="generated\Metadata_generated.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

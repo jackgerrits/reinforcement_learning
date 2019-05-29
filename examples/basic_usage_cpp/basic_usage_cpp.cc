@@ -40,9 +40,9 @@ int main() {
 
   //! [(3) Choose an action]
   // Response class
-  r::ranking_response response;
+  r::decision_response response;
 
-  if( rl.choose_rank(event_id, context, response, &status) != err::success ) {
+  if( rl.request_decision(context, response, &status) != err::success ) {
     std::cout << status.get_error_msg() << std::endl;
     return -1;
   }
@@ -50,7 +50,7 @@ int main() {
 
   //! [(4) Use the response]
   size_t chosen_action;
-  if( response.get_chosen_action_id(chosen_action, &status) != err::success ) {
+  if( response.begin()->get_chosen_action_id(chosen_action, &status) != err::success ) {
     std::cout << status.get_error_msg() << std::endl;
     return -1;
   }
@@ -60,7 +60,7 @@ int main() {
   //! [(5) Report outcome]
   //     Report received outcome (Optional: if this call is not made, default missing outcome is applied)
   //     Missing outcome can be thought of as negative reinforcement
-  if( rl.report_outcome(event_id, outcome, &status) != err::success ) {
+  if( rl.report_outcome(response.begin()->get_event_id(), outcome, &status) != err::success ) {
     std::cout << status.get_error_msg() << std::endl;
     return -1;
   }
