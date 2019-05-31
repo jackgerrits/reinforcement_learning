@@ -36,7 +36,7 @@ namespace Rl.Net {
             // TODO: CLS-compliance requires that we not publically expose unsigned types.
             // Probably not a big issue ("9e18 actions ought to be enough for anyone...")
             [DllImport("rl.net.native.dll")]
-            public static extern UIntPtr GetDecisionSize(IntPtr rankingResponse);
+            public static extern UIntPtr GetDecisionSize(IntPtr decisionResponse);
         }
     }
 

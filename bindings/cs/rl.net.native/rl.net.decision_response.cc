@@ -56,7 +56,7 @@ API size_t GetDecisionSize(reinforcement_learning::decision_response* decision)
 // TODO: We should think about how to avoid extra string copies; ideally, err constants
 // should be able to be shared between native/managed, but not clear if this is possible
 // right now.
-API const char* GetDecisionModelId(reinforcement_learning::ranking_response* decision)
+API const char* GetDecisionModelId(reinforcement_learning::decision_response* decision)
 {
     return decision->get_model_id();
 }
