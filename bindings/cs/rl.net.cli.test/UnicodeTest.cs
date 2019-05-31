@@ -506,29 +506,31 @@ namespace Rl.Net.Cli.Test
             }
         }
 
-        private void Run_GetRankingModelId_Test(string modelIdToReturn)
+        private void Run_StringReturnMarshallingTest<TNativeObject>(string valueToReturn, Action<Func<IntPtr, IntPtr>> registerNativeOverride, Func<TNativeObject, string> targetInvocation, string targetInvocationName)
+            where TNativeObject : NativeObject, new()
         {
-            RankingResponse rankingResponse = new RankingResponse();
+            TNativeObject targetObject = new TNativeObject();
             GCHandle valueToReturnHandle = default(GCHandle);
 
             try
             {
                 IntPtr valueToReturnPtr = IntPtr.Zero;
-                if (modelIdToReturn != null)
+                if (valueToReturn != null)
                 {
-                    byte[] valueToReturnUtf8Bytes = NativeMethods.StringEncoding.GetBytes(modelIdToReturn);
+                    byte[] valueToReturnUtf8Bytes = NativeMethods.StringEncoding.GetBytes(valueToReturn);
                     valueToReturnHandle = GCHandle.Alloc(valueToReturnUtf8Bytes, GCHandleType.Pinned);
                     valueToReturnPtr = valueToReturnHandle.AddrOfPinnedObject();
                 }
 
-                NativeMethods.GetRankingModelIdOverride =
-                    (IntPtr rankingResponsePtr) =>
-                    {
-                        return valueToReturnPtr;
-                    };
+                IntPtr ReturnTargetValue(IntPtr targetObjectPtr)
+                {
+                    return valueToReturnPtr;
+                }
 
-                string getResult = rankingResponse.ModelId;
-                Assert.AreEqual(modelIdToReturn ?? String.Empty, getResult, "Marshalling result does not work properly in GetRankingModelId");
+                registerNativeOverride(ReturnTargetValue);
+
+                string getResult = targetInvocation(targetObject);
+                Assert.AreEqual(valueToReturn ?? String.Empty, getResult, $"Marshalling result does not work properly in {targetInvocationName}");
             }
             finally
             {
@@ -537,9 +539,29 @@ namespace Rl.Net.Cli.Test
                     valueToReturnHandle.Free();
                 }
 
-                rankingResponse?.Dispose();
-                rankingResponse = null;
+                targetObject?.Dispose();
+                targetObject = null;
             }
+        }
+
+        private void Run_GetRankingModelId_Test(string modelIdToReturn)
+        {
+            void RegisterNativeOverride(Func<IntPtr, IntPtr> nativeOverrideCallback)
+            {
+                NativeMethods.GetRankingModelIdOverride = nativeOverrideCallback;
+            }
+
+            Run_StringReturnMarshallingTest<RankingResponse>(modelIdToReturn, RegisterNativeOverride, rankingResponse => rankingResponse.ModelId, nameof(NativeMethods.GetRankingModelId));
+        }
+
+        private void Run_GetRankingEventId_Test(string eventIdToReturn)
+        {
+            void RegisterNativeOverride(Func<IntPtr, IntPtr> nativeOverrideCallback)
+            {
+                NativeMethods.GetRankingEventIdOverride = nativeOverrideCallback;
+            }
+
+            Run_StringReturnMarshallingTest<RankingResponse>(eventIdToReturn, RegisterNativeOverride, rankingResponse => rankingResponse.EventId, nameof(NativeMethods.GetRankingEventId));
         }
 
         [TestMethod]
@@ -550,6 +572,24 @@ namespace Rl.Net.Cli.Test
             Run_GetRankingModelId_Test(String.Join("/", PseudoLocEventId, PseudoLocEventId));
             Run_GetRankingModelId_Test(String.Empty);
             Run_GetRankingModelId_Test(null);
+        }
+
+        private void Run_GetDecisionModelId_Test(string modelIdToReturn)
+        {
+            void RegisterNativeOverride(Func<IntPtr, IntPtr> nativeOverrideCallback)
+            {
+                NativeMethods.GetDecisionModelIdOverride = nativeOverrideCallback;
+            }
+
+            Run_StringReturnMarshallingTest<DecisionResponse>(modelIdToReturn, RegisterNativeOverride, decisionResponse => decisionResponse.ModelId, nameof(NativeMethods.GetDecisionModelId));
+        }
+
+        [TestMethod]
+        public void Test_DecisionResponseStringProperties()
+        {
+            Run_GetDecisionModelId_Test(String.Join("/", PseudoLocEventId, PseudoLocEventId));
+            Run_GetDecisionModelId_Test(String.Empty);
+            Run_GetDecisionModelId_Test(null);
         }
 
         // TODO: Figure out how to project the mock objects from the C++ unit testing code to be
