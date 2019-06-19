@@ -34,4 +34,5 @@ ERROR_CODE_DEFINITION(32, preamble_error, "Unable to read or write the preamble.
 ERROR_CODE_DEFINITION(33, file_open_error, "Unable to open file.")
 ERROR_CODE_DEFINITION(34, file_read_error, "Unable to read from file.")
 ERROR_CODE_DEFINITION(35, file_stats_error, "Unable to read file statistics e.g. modified date time.")
+ERROR_CODE_DEFINITION(36, json_no_slots_found, "Context json did not have slots (_slots array empty or not found)")
 //! [Error Definitions]

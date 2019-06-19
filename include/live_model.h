@@ -8,6 +8,7 @@
 #pragma once
 #include "action_flags.h"
 #include "ranking_response.h"
+#include "decision_response.h"
 #include "err_constants.h"
 #include "factory_resolver.h"
 #include "sender.h"
@@ -136,7 +137,10 @@ namespace reinforcement_learning {
     * @return int Return error code.  This will also be returned in the api_status object
     */
     int choose_rank(const char * context_json, unsigned int flags, ranking_response& resp, api_status* status = nullptr); //event_id is auto-generated
-    
+
+    int request_decision(const char * context_json, unsigned int flags, decision_response& resp, api_status* status = nullptr);
+    int request_decision(const char * context_json, decision_response& resp, api_status* status = nullptr);
+
     /**
     * @brief Report that action was taken.
     *
