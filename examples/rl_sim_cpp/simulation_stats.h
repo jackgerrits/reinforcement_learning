@@ -1,5 +1,7 @@
 #pragma once
 #include <map>
+#include <string>
+
 class simulation_stats {
 public:
   simulation_stats();

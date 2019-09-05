@@ -8,6 +8,7 @@ add_executable(rltest
   err_callback_test.cc
   event_queue_test.cc
   eventhub_client_test.cc
+  event_builder_test.cc
   explore_test.cc
   factory_test.cc
   fb_serializer_test.cc

@@ -117,8 +117,6 @@ public:
      *
      * @return std::string
      */
-    std::string get_action_features();
-
     static std::string get_slot_features(const std::vector<std::string>& ids);
 
   private:

@@ -14,6 +14,7 @@ set(PROJECT_SOURCES
   console_tracer.cc
   decision_response.cc
   error_callback_fn.cc
+  event_builder.cc
   factory_resolver.cc
   live_model_impl.cc
   live_model.cc
@@ -60,6 +61,7 @@ set(PROJECT_PUBLIC_HEADERS
   ../include/constants.h
   ../include/decision_response.h
   ../include/err_constants.h
+  ../include/event_builder.h
   ../include/errors_data.h
   ../include/factory_resolver.h
   ../include/live_model.h
