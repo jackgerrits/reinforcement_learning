@@ -14,6 +14,7 @@ std::string get_dist_str(const reinforcement_learning::ranking_response& respons
 
 int rl_sim::loop() {
   if ( !init() ) return -1;
+
   if(ccb_mode)
   {
     return ccb_loop();
@@ -35,14 +36,11 @@ int rl_sim::cb_loop() {
     const auto req_id = create_event_id();
     r::api_status status;
 
-    solver<json_representation> s(_rl.get());
-    s.predict_and_log(event);
-
     // Choose an action
-    // if ( _rl->choose_rank(req_id.c_str(), context_json.c_str(), response, &status) != err::success ) {
-    //   std::cout << status.get_error_msg() << std::endl;
-    //   continue;
-    // }
+    if ( _rl->choose_rank(req_id.c_str(), context_json.c_str(), response, &status) != err::success ) {
+      std::cout << status.get_error_msg() << std::endl;
+      continue;
+    }
 
     // Use the chosen action
     size_t chosen_action;
@@ -229,12 +227,6 @@ bool rl_sim::init_sim_world() {
   };
   _people.emplace_back("mk", "psychology", "kids", "7of9", tp);
 
-  std::vector<feature_space<json_representation>> feature_spaces;
-  std::transform (_topics.begin(), _topics.end(), feature_spaces.begin(),
-    [](std::string topic) -> feature_space<json_representation>
-      { return {{{"TAction", {{"topic", topic}}}}}; });
-  actions= {feature_spaces};
-
   return true;
 }
 
@@ -244,8 +236,16 @@ bool rl_sim::init() {
   return true;
 }
 
-const cb_problem_type::instance<json_representation>& rl_sim::get_action_features() {
-  return actions;
+std::string rl_sim::get_action_features() {
+  std::ostringstream oss;
+  // example
+  // R"("_multi": [ { "TAction":{"topic":"HerbGarden"} }, { "TAction":{"topic":"MachineLearning"} } ])";
+  oss << R"("_multi": [ )";
+  for ( auto idx = 0; idx < _topics.size() - 1; ++idx) {
+    oss << R"({ "TAction":{"topic":")" << _topics[idx] << R"("} }, )";
+  }
+  oss << R"({ "TAction":{"topic":")" << _topics.back() << R"("} } ])";
+  return oss.str();
 }
 
 
