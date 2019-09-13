@@ -14,7 +14,6 @@ set(PROJECT_SOURCES
   console_tracer.cc
   decision_response.cc
   error_callback_fn.cc
-  event_builder.cc
   factory_resolver.cc
   live_model_impl.cc
   live_model.cc
