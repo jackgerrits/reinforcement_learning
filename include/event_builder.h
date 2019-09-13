@@ -25,11 +25,12 @@ struct slate_problem_type
 
 struct feature
 {
-  feature() {}
+  feature() = default;
   feature(std::string const& name, float value) : name(name), value(value) {}
   feature(std::string const& name, std::string const& value) : name(name + value) {}
   feature(std::string const& name) : name(name) {}
-  std::string name;
+
+  std::string name = "";
   float value = 1.0f;
 };
 
@@ -41,9 +42,31 @@ struct continuous_action
 
 struct feat_namespace
 {
-  feat_namespace() {}
+  feat_namespace() = default;
+  feat_namespace(std::string const& name)  : name(name){}
   feat_namespace(std::vector<feature> const& features) : features(features) {}
   feat_namespace(std::string const& name, std::vector<feature> const& features) : name(name), features(features) {}
+
+  void push_feature(feature const& ns)
+  {
+    features.push_back(ns);
+  }
+
+  void push_feature(feature const&& ns)
+  {
+    features.emplace_back(ns);
+  }
+
+  void push_feature(std::string const& name, float value)
+  {
+    features.emplace_back(name, value);
+  }
+
+  void push_feature(std::string const& name)
+  {
+    features.emplace_back(name);
+  }
+
   std::string name = "";
   std::vector<feature> features;
 };
@@ -57,9 +80,20 @@ struct feature_space
   {
     namespaces.push_back(ns);
   }
+
   void push_namespace(feat_namespace const&& ns)
   {
     namespaces.emplace_back(ns);
+  }
+
+  void push_namespace(std::string const& name, std::vector<feature> const& features)
+  {
+    namespaces.emplace_back(name, features);
+  }
+
+  void push_namespace(std::vector<feature> const& features)
+  {
+    namespaces.emplace_back(features);
   }
 
   std::vector<feat_namespace> namespaces;
@@ -87,9 +121,9 @@ struct builder
   builder() = default;
 
   template <typename TSerializer>
-  typename TSerializer::emit_type emit()
+  typename TSerializer::serialized_t emit()
   {
-    return serializer.serialize(shared_context, actions, slots);
+    return TSerializer::serialize(shared_context, actions, slots);
   }
 
   feature_space shared_context;
@@ -153,7 +187,7 @@ struct json_serializer
         ss << ",";
       }
 
-      ss << R"("_a":[)";
+      ss << R"("_inc":[)";
       bool first_run = true;
 
       for (auto& x : s._explicit_included_actions)
@@ -174,7 +208,7 @@ struct json_serializer
 
     if (s._id != "")
     {
-      if (s._explicit_included_actions.size() > 0)
+      if (s._explicit_included_actions.size() > 0 || i2 > i)
       {
         ss << ",";
       }
@@ -244,6 +278,17 @@ struct slate_slot
 {
   // ActionSets for Slates do not overlap, so the provided interface only allows for that.
   slate_slot(feature_space const& shared_context, std::vector<feature_space> actions) : shared_context(shared_context), actions(actions) {}
+  slate_slot(feature_space const& shared_context) : shared_context(shared_context) {}
+
+  void push_action(feature_space const& a)
+  {
+    actions.push_back(a);
+  }
+  
+  void push_action(std::vector<feat_namespace> const& namespaces)
+  {
+    actions.emplace_back(namespaces);
+  }
 
   feature_space shared_context;
   std::vector<feature_space> actions;
@@ -253,7 +298,6 @@ template <>
 struct problem_data<cb_problem_type>
 {
   problem_data(std::vector<feature_space> const& actions) : actions(actions) {}
-  std::vector<feature_space> actions;
   void add_to(builder& b) const
   {
     for (auto& action : actions)
@@ -261,14 +305,26 @@ struct problem_data<cb_problem_type>
       b.actions.push_back(action);
     }
   }
+  std::vector<feature_space> actions;
+
 };
 
 template <>
 struct problem_data<slate_problem_type>
 {
+  problem_data() = default;
   problem_data(std::vector<slate_slot> const& slots) : slots(slots) {}
 
-  std::vector<slate_slot> slots;
+  void push_slot(slate_slot const& s)
+  {
+    slots.push_back(s);
+  }
+
+  void push_slot(feature_space const& shared_context, std::vector<feature_space> actions)
+  {
+    slots.emplace_back(shared_context, actions);
+  }
+
   void add_to(builder& b) const
   {
     for (auto& slot : slots)
@@ -285,6 +341,9 @@ struct problem_data<slate_problem_type>
       b.slots.push_back({ slot.shared_context, indicies });
     }
   }
+
+  std::vector<slate_slot> slots;
+
 };
 
 template <typename TProblemType>
@@ -304,7 +363,7 @@ struct problem_event
   }
 
   template <typename TRepresentation>
-  typename TRepresentation::serialized_t emit()
+  typename TRepresentation::serialized_t emit() const
   {
     return TRepresentation::serialize(b);
   }
@@ -315,8 +374,8 @@ struct problem_event
 
 struct estimator
 {
-  estimator();
-  estimator(reinforcement_learning::live_model* lm);
+  estimator() = default;
+  estimator(reinforcement_learning::live_model* lm) : lm(lm) {}
 
   template <typename TProblemType, typename... Ts>
   typename TProblemType::response_t predict_and_log(problem_event<TProblemType> const& instance, Ts&& ...) = delete;
@@ -327,4 +386,20 @@ struct estimator
 template <>
 inline slate_problem_type::response_t estimator::predict_and_log<slate_problem_type>(problem_event<slate_problem_type> const& instance)
 {
+  auto context = instance.emit<json_serializer>();
+  reinforcement_learning::decision_response response;
+  lm->request_decision(context.c_str(), response);
+
+  int index = 0;
+  int accumulated_size = 0;
+  for (auto& item : response)
+  {
+    size_t id;
+    item.get_chosen_action_id(id);
+    item.set_chosen_action_id(id - accumulated_size);
+
+    accumulated_size += instance.b.slots[index]._explicit_included_actions.size();
+  }
+
+  return response;
 }
