@@ -55,7 +55,7 @@ namespace reinforcement_learning {
       _action_ids_vector.push_back(std::vector<uint32_t>());
       _probilities_vector.push_back(std::vector<float>());
       for (auto const& r : ranking_res) {
-        _action_ids_vector.back().push_back(r.action_id + 1);
+        _action_ids_vector.back().push_back(r.action_id);
         _probilities_vector.back().push_back(r.probability);
       }
     }
