@@ -178,7 +178,7 @@ struct json_serializer
     auto i = ss.tellp();
     serialize(ss, s.slot_context);
     auto i2 = ss.tellp();
-    
+
 
     if (s._explicit_included_actions.size() > 0)
     {
@@ -284,7 +284,7 @@ struct slate_slot
   {
     actions.push_back(a);
   }
-  
+
   void push_action(std::vector<feat_namespace> const& namespaces)
   {
     actions.emplace_back(namespaces);
@@ -399,6 +399,7 @@ inline slate_problem_type::response_t estimator::predict_and_log<slate_problem_t
     item.set_chosen_action_id(id - accumulated_size);
 
     accumulated_size += instance.b.slots[index]._explicit_included_actions.size();
+    index++;
   }
 
   return response;

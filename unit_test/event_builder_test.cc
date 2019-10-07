@@ -24,7 +24,7 @@ BOOST_AUTO_TEST_CASE(json_serialize_cb_problem)
 
 BOOST_AUTO_TEST_CASE(json_serialize_slate_problem)
 {
-  problem_data<slate_problem_type> prob({
+  problem_data<slate_problem_type> prob(std::vector<slate_slot>{
     {
       feature_space(),
       {
