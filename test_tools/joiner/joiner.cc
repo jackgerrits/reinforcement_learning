@@ -53,75 +53,30 @@ void for_each_item_in_log(std::istream& in_strm, T func)
     in_strm.read(msg_data.get(), p.msg_size);
     if (in_strm.fail() || in_strm.bad())
     {
-      std::cerr << "Error reading from input file." << std::endl;
-      return;
+      continue;
     }
 
-    func(p, std::move(msg_data));
+    func(p, msg_data.get());
   } while (!in_strm.fail() && !in_strm.bad());
-}
-
-// This type is large and awful, but it allows us to own the memory for the flatbuffers, alongside the pointers that allow us to use them
-std::vector<std::pair<std::unique_ptr<char>, std::vector<const rl::messages::flatbuff::DecisionEvent*>>>
-get_decision_events(std::istream& in_strm)
-{
-  std::vector<std::pair<std::unique_ptr<char>, std::vector<const rl::messages::flatbuff::DecisionEvent*>>> data_events;
-  for_each_item_in_log(in_strm, [&data_events](rlog::preamble& p, std::unique_ptr<char>&& data) {
-    switch (p.msg_type)
-    {
-      case rlog::message_type::fb_decision_event_collection:
-      {
-        const auto batch = rl::messages::flatbuff::GetDecisionEventBatch(data.get());
-        std::vector<const rl::messages::flatbuff::DecisionEvent*> local_events;
-        // auto evts = batch->events();
-        for (auto const event : *batch->events())
-        {
-          local_events.push_back(event);
-        }
-        // std::copy(evts->begin(), evts->end(), std::begin(local_events));
-        data_events.push_back(std::make_pair(std::move(data), local_events));
-      }
-      break;
-      default:
-        break;
-    }
-  });
-
-  return data_events;
 }
 
 std::map<std::string, std::vector<outcome_t>> get_outcome_events(std::istream& in_strm)
 {
   std::map<std::string, std::vector<outcome_t>> outcomes;
-  for_each_item_in_log(in_strm, [&outcomes](rlog::preamble& p, std::unique_ptr<char>&& data) {
-    switch (p.msg_type)
+  for_each_item_in_log(in_strm, [&outcomes](rlog::preamble& p, void* data) {
+    if (p.msg_size == rlog::message_type::fb_outcome_event_collection)
     {
-      case rlog::message_type::fb_outcome_event_collection:
+      const auto batch = rl::messages::flatbuff::GetOutcomeEventBatch(data);
+      std::vector<outcome_t> local_events;
+      for (auto const event : *batch->events())
       {
-        const auto batch = rl::messages::flatbuff::GetOutcomeEventBatch(data.get());
-        std::vector<outcome_t> local_events;
-        for (auto const event : *batch->events())
+        if (event->the_event_type() == rl::messages::flatbuff::OutcomeEvent::OutcomeEvent_NumericEvent)
         {
-          switch (event->the_event_type())
-          {
-            case rl::messages::flatbuff::OutcomeEvent::OutcomeEvent_NumericEvent:
-            {
-              auto event_id = event->event_id()->str();
-              const auto number = event->the_event_as_NumericEvent();
-              outcomes[event_id].emplace_back(number->value());
-            }
-            break;
-            case rl::messages::flatbuff::OutcomeEvent::OutcomeEvent_StringEvent:
-            case rl::messages::flatbuff::OutcomeEvent::OutcomeEvent_ActionTakenEvent:
-            default:
-              // String and action events are not handled by this joiner.
-              break;
-          }
+          auto event_id = event->event_id()->str();
+          const auto number = event->the_event_as_NumericEvent();
+          outcomes[event_id].emplace_back(number->value());
         }
       }
-      break;
-      default:
-        break;
     }
   });
 
@@ -134,7 +89,8 @@ std::string join_and_serialize(const rl::messages::flatbuff::DecisionEvent* deci
   std::stringstream ss;
   ss << R"({"Version":"1")";
 
-  const char* context = reinterpret_cast<const char*>(decision_event->context()->data());
+  std::string context(
+      reinterpret_cast<const char*>(decision_event->context()->data()), decision_event->context()->size());
   ss << R"(,"c":)" << context << R"(,"_outcomes":[)";
 
   auto delimiter = "";
@@ -185,18 +141,20 @@ std::string join_and_serialize(const rl::messages::flatbuff::DecisionEvent* deci
   return ss.str();
 }
 
-void join(std::string const& decisions_file_name, std::string const& outcomes_file_name)
+void join_ccb(std::string const& decisions_file_name, std::string const& outcomes_file_name)
 {
   auto decisions_stream = get_stream(decisions_file_name);
   auto outcomes_stream = get_stream(outcomes_file_name);
-  auto const decision_events = get_decision_events(decisions_stream);
   auto const outcome_events = get_outcome_events(outcomes_stream);
 
-  for (auto const& data_pair : decision_events)
-  {
-    for (auto const& event : data_pair.second)
+  for_each_item_in_log(decisions_stream, [&outcome_events](rlog::preamble& p, void* data) {
+    if (p.msg_type == rlog::message_type::fb_decision_event_collection)
     {
-      std::cout << join_and_serialize(event, outcome_events) << std::endl;
+      const auto batch = rl::messages::flatbuff::GetDecisionEventBatch(data);
+      for (auto const event : *batch->events())
+      {
+        std::cout << join_and_serialize(event, outcome_events) << std::endl;
+      }
     }
-  }
+  });
 }

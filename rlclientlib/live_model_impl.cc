@@ -137,7 +137,7 @@ namespace reinforcement_learning {
       // Generate a uniform random pmf to sample from.
       std::vector<float> pdf(num_decisions);
       const auto top_action_id = 0;
-      auto scode = e::generate_epsilon_greedy(0.f, top_action_id, std::begin(pdf), std::end(pdf));
+      auto scode = e::generate_epsilon_greedy(1.f, top_action_id, std::begin(pdf), std::end(pdf));
       if (S_EXPLORATION_OK != scode) {
         RETURN_ERROR_LS(_trace_logger.get(), status, exploration_error) << "Exploration error code: " << scode;
       }
@@ -152,7 +152,8 @@ namespace reinforcement_learning {
 
       // Sample an action from the chosen slot for sampling.
       uint32_t chosen_action;
-      scode = e::sample_after_normalizing(seed, begin(actions_pdfs[chosen_slot]), end(actions_pdfs[chosen_slot]), chosen_action);
+      // Hack to use a different sampling seed
+      scode = e::sample_after_normalizing(seed + 1, begin(actions_pdfs[chosen_slot]), end(actions_pdfs[chosen_slot]), chosen_action);
 
 
       // Swap values in first position with values in chosen index.
@@ -168,17 +169,17 @@ namespace reinforcement_learning {
     }
 
     RETURN_IF_FAIL(populate_response(actions_ids, actions_pdfs, event_ids, std::move(std::string(model_version)), resp, _trace_logger.get(), status));
+    std::string context(context_json);
     if (sample_mode == value::SAMPLE_SINGLE)
     {
       RETURN_IF_FAIL(resp.set_sample_slot(chosen_slot)); // unused for now
 
       // Temporary hack to pass this info.
-      std::string context(context_json);
       auto it = context.find('{');
       context.insert(it+1, "\"_slot_sampled\":"+std::to_string(chosen_slot)+",");
     }
 
-    RETURN_IF_FAIL(_decision_logger->log_decisions(event_ids, context_json, flags, resp, status));
+    RETURN_IF_FAIL(_decision_logger->log_decisions(event_ids, context.c_str(), flags, resp, status));
 
     // Check watchdog for any background errors. Do this at the end of function so that the work is still done.
     if (_watchdog.has_background_error_been_reported()) {

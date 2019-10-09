@@ -7,6 +7,7 @@
 #include "v_array.h"
 
 #include <iostream>
+#include <algorithm>
 
 namespace reinforcement_learning {
   static const std::string SEED_TAG = "seed=";
@@ -42,7 +43,7 @@ namespace reinforcement_learning {
 
     virtual ssize_t read_file(int f, void* buf, size_t nbytes)
     {
-      size_t left_over = min(nbytes, (size_t)(_model_data_end - _current));
+      size_t left_over = std::min(nbytes, (size_t)(_model_data_end - _current));
 
       if (left_over == 0)
         return 0;
