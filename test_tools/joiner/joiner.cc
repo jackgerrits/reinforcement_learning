@@ -21,7 +21,7 @@ namespace rl = reinforcement_learning;
 
 using outcome_t = float;
 
-constexpr int default_reward = 0;
+constexpr float default_reward = 0;
 
 std::ifstream get_stream(const std::string& file)
 {
@@ -64,10 +64,9 @@ std::map<std::string, std::vector<outcome_t>> get_outcome_events(std::istream& i
 {
   std::map<std::string, std::vector<outcome_t>> outcomes;
   for_each_item_in_log(in_strm, [&outcomes](rlog::preamble& p, void* data) {
-    if (p.msg_size == rlog::message_type::fb_outcome_event_collection)
+    if (p.msg_type == rlog::message_type::fb_outcome_event_collection)
     {
       const auto batch = rl::messages::flatbuff::GetOutcomeEventBatch(data);
-      std::vector<outcome_t> local_events;
       for (auto const event : *batch->events())
       {
         if (event->the_event_type() == rl::messages::flatbuff::OutcomeEvent::OutcomeEvent_NumericEvent)
