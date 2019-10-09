@@ -9,6 +9,7 @@
 #include "../../rlclientlib/logger/message_type.h"
 #include "../../rlclientlib/generated/RankingEvent_generated.h"
 #include "../../rlclientlib/generated/OutcomeEvent_generated.h"
+#include "../../rlclientlib/generated/DecisionRankingEvent_generated.h"
 // namespace aliases
 namespace rlog = reinforcement_learning::logger;
 namespace flat = reinforcement_learning::messages::flatbuff;
@@ -16,10 +17,11 @@ namespace flat = reinforcement_learning::messages::flatbuff;
 
 namespace reinforcement_learning { namespace joiner {
 
-  // forward declarations 
+  // forward declarations
   void convert_to_text(const std::string& file);
   void convert_to_text(std::istream& in_strm, std::ostream& out_strm);
   void print_ranking_event(void* buff, std::ostream& out_strm);
+  void print_decision_event(void* buff, std::ostream& out_strm);
   void print_outcome_event(void* buff, std::ostream& out_strm);
   void print_numeric_outcome(const flat::OutcomeEventHolder* evt, std::ostream& out_strm);
   void print_string_outcome(const flat::OutcomeEventHolder* evt, std::ostream& out_strm);
@@ -67,6 +69,9 @@ namespace reinforcement_learning { namespace joiner {
         break;
       case rlog::message_type::fb_outcome_event_collection:
         print_outcome_event(msg_data.get(), out_strm);
+        break;
+      case rlog::message_type::fb_decision_event_collection:
+        print_decision_event(msg_data.get(), out_strm);
         break;
       default:
         break;
@@ -123,6 +128,51 @@ namespace reinforcement_learning { namespace joiner {
       out_strm << ", p [ ";
       for (auto i : *evt->probabilities()) {
         out_strm << i << ' ';
+      }
+      out_strm << "]";
+
+      out_strm << ", c [";
+      out_strm << to_str(evt->context());
+      out_strm << "]";
+
+      out_strm << ", m [";
+      out_strm << to_str(evt->model_id());
+      out_strm << "]";
+
+      out_strm << ", pass [" << evt->pass_probability() << "]";
+      out_strm << ", def [" << evt->deferred_action() << "]" << std::endl;
+    }
+  }
+
+  void print_decision_event(void *buff, std::ostream &out_strm)
+  {
+    const auto batch = flat::GetDecisionEventBatch(buff);
+    const auto events = batch->events();
+    out_strm << "DecisionBatch: ";
+    for (auto const& evt : *events)
+    {
+      out_strm << "Decision: ";
+
+      out_strm << "[" << to_str(evt->meta()) << "]";
+
+      out_strm << " slots [";
+      for (auto const& slot : *evt->slots())
+      {
+        out_strm << " id [" << to_str(slot->decision_slot_id()) << "]";
+
+        out_strm << ", a [ ";
+        for (auto i : *slot->action_ids())
+        {
+          out_strm << i << ' ';
+        }
+        out_strm << "]";
+
+        out_strm << ", p [ ";
+        for (auto i : *slot->probabilities())
+        {
+          out_strm << i << ' ';
+        }
+        out_strm << "],";
       }
       out_strm << "]";
 

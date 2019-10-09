@@ -4,6 +4,7 @@
 #include <iostream>
 #include <boost/program_options.hpp>
 #include "text_converter.h"
+#include "joiner.h"
 
 // namespace aliases
 namespace po = boost::program_options;
@@ -52,7 +53,7 @@ void parse_and_run(int argc, char** argv) {
                               "observation.fb.data" });
   }
   else if (vm["join"].as<bool>()) {
-    std::cout << "Coming soon..." << std::endl;
+    join("interaction.fb.data", "observation.fb.data" );
   }
   else {
     std::cout << desc << std::endl;
