@@ -126,7 +126,58 @@ namespace reinforcement_learning {
 
     // This will behave correctly both before a model is loaded and after. Prior to a model being loaded it operates in explore only mode.
     RETURN_IF_FAIL(_model->request_decision(event_ids, context_json, actions_ids, actions_pdfs, model_version, status));
+
+    // If single sample mode is being used, we do not rely on VW to sample but rather do stagewise sampling ourselves.
+    const std::string sample_mode = _configuration.get(name::CCB_SAMPLE_MODE, value::SAMPLE_ALL);
+    uint32_t chosen_slot;
+    if (sample_mode == value::SAMPLE_SINGLE)
+    {
+      size_t num_decisions = actions_pdfs.size();
+
+      // Generate a uniform random pmf to sample from.
+      std::vector<float> pdf(num_decisions);
+      const auto top_action_id = 0;
+      auto scode = e::generate_epsilon_greedy(0.f, top_action_id, std::begin(pdf), std::end(pdf));
+      if (S_EXPLORATION_OK != scode) {
+        RETURN_ERROR_LS(_trace_logger.get(), status, exploration_error) << "Exploration error code: " << scode;
+      }
+
+      // The seed used is composed of uniform_hash(app_id) + uniform_hash(event_id)
+      const uint64_t seed = uniform_hash(event_ids[0], strlen(event_ids[0]), 0) + _seed_shift;
+
+      scode = e::sample_after_normalizing(seed, begin(pdf), end(pdf), chosen_slot);
+      if (S_EXPLORATION_OK != scode) {
+        RETURN_ERROR_LS(_trace_logger.get(), status, exploration_error) << "Exploration error code: " << scode;
+      }
+
+      // Sample an action from the chosen slot for sampling.
+      uint32_t chosen_action;
+      scode = e::sample_after_normalizing(seed, begin(actions_pdfs[chosen_slot]), end(actions_pdfs[chosen_slot]), chosen_action);
+
+
+      // Swap values in first position with values in chosen index.
+      scode = e::swap_chosen(begin(actions_pdfs[chosen_slot]), end(actions_pdfs[chosen_slot]), chosen_action);
+      if ( S_EXPLORATION_OK != scode ) {
+        RETURN_ERROR_LS(_trace_logger.get(), status, exploration_error) << "Exploration (Swap) error code: " << scode;
+      }
+
+      scode = e::swap_chosen(begin(actions_ids[chosen_slot]), end(actions_ids[chosen_slot]), chosen_action);
+      if ( S_EXPLORATION_OK != scode ) {
+        RETURN_ERROR_LS(_trace_logger.get(), status, exploration_error) << "Exploration (Swap) error code: " << scode;
+      }
+    }
+
     RETURN_IF_FAIL(populate_response(actions_ids, actions_pdfs, event_ids, std::move(std::string(model_version)), resp, _trace_logger.get(), status));
+    if (sample_mode == value::SAMPLE_SINGLE)
+    {
+      RETURN_IF_FAIL(resp.set_sample_slot(chosen_slot)); // unused for now
+
+      // Temporary hack to pass this info.
+      std::string context(context_json);
+      auto it = context.find('{');
+      context.insert(it+1, "\"_slot_sampled\":"+std::to_string(chosen_slot)+",");
+    }
+
     RETURN_IF_FAIL(_decision_logger->log_decisions(event_ids, context_json, flags, resp, status));
 
     // Check watchdog for any background errors. Do this at the end of function so that the work is still done.

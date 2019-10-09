@@ -22,6 +22,32 @@ namespace reinforcement_learning
     return _model_id.c_str();
   }
 
+  bool decision_response::is_sample_slot_set() const
+  {
+    return _sample_slot_set;
+  }
+
+  int decision_response::get_sample_slot(uint32_t& slot_id, api_status* status ) const
+  {
+    if ( _decision.empty() ) {
+      RETURN_ERROR_LS(nullptr, status, action_not_found);
+    }
+
+    slot_id = _sample_slot;
+    return error_code::success;
+  }
+
+  int decision_response::set_sample_slot(uint32_t slot_id, api_status* status)
+  {
+    if ( slot_id >= _decision.size() ) {
+      RETURN_ERROR_LS(nullptr, status, action_out_of_bounds) << " id:" << _sample_slot << ", size:" << _decision.size();
+    }
+
+    _sample_slot = slot_id;
+    _sample_slot_set = true;
+    return error_code::success;
+  }
+
   void decision_response::clear() {
     _decision.clear();
     _model_id.clear();

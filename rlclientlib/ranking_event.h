@@ -96,6 +96,8 @@ namespace reinforcement_learning {
 
     std::string _model_id;
     bool _deferred_action;
+    uint32_t _sample_slot;
+    bool _sample_slot_set;
   };
 
   //serializable outcome event

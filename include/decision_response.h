@@ -27,6 +27,10 @@ namespace reinforcement_learning {
     void set_model_id(std::string&& model_id);
     const char* get_model_id() const;
 
+    bool is_sample_slot_set() const;
+    int get_sample_slot(uint32_t& slot_id, api_status* status = nullptr) const;
+    int set_sample_slot(uint32_t slot_id, api_status* status = nullptr);
+
     void clear();
     const_iterator_t begin() const;
     iterator_t begin();
@@ -40,5 +44,7 @@ namespace reinforcement_learning {
   private:
     std::string _model_id;
     coll_t _decision;
+    uint32_t _sample_slot;
+    bool _sample_slot_set = false;
   };
 }

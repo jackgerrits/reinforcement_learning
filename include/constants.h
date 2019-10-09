@@ -11,6 +11,7 @@ namespace reinforcement_learning {  namespace name {
       const char *const  VW_CMDLINE              = "vw.commandline";
       const char *const  VW_POOL_INIT_SIZE       = "vw.pool.init.size";
       const char *const  INITIAL_EPSILON         = "initial_exploration.epsilon";
+      const char *const  CCB_SAMPLE_MODE         = "ccb.sample.mode";
 
       // Interaction
       const char *const  INTERACTION_EH_HOST     = "interaction.eventhub.host";
@@ -75,6 +76,9 @@ namespace reinforcement_learning {  namespace value {
       const char *const CONSOLE_TRACE_LOGGER = "CONSOLE_TRACE_LOGGER";
       const char *const NULL_TIME_PROVIDER = "NULL_TIME_PROVIDER";
       const char *const CLOCK_TIME_PROVIDER = "CLOCK_TIME_PROVIDER";
+      const char *const SAMPLE_ALL = "SAMPLE_ALL";
+      const char *const SAMPLE_SINGLE = "SAMPLE_SINGLE";
+
       const bool DEFAULT_MODEL_BACKGROUND_REFRESH = true;
       const int DEFAULT_VW_POOL_INIT_SIZE = 4;
 }}

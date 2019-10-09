@@ -66,6 +66,12 @@ namespace reinforcement_learning {
       _event_ids.emplace_back(evt);
     }
     copy(context_str.begin(), context_str.end(), std::back_inserter(_context));
+
+    if(response.is_sample_slot_set())
+    {
+      response.get_sample_slot(_sample_slot); // Can fail, what do we do?
+      _sample_slot_set = true;
+    }
   }
 
   const std::vector<unsigned char>& decision_ranking_event::get_context() const { return _context; }
