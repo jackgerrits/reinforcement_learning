@@ -106,7 +106,8 @@ std::string join_and_serialize(const rl::messages::flatbuff::DecisionEvent* deci
       // Reward function used is 0th.
       reward = decision_outcomes_iterator->second[0];
     }
-    ss << R"("_label_cost":)" << reward << R"(,"_a":[)";
+    // Reward must be negated to become cost.
+    ss << R"("_label_cost":)" << -1 * reward << R"(,"_a":[)";
     auto delimiter_inner = "";
     for (auto const& action_id : *slot->action_ids())
     {
