@@ -96,19 +96,15 @@ namespace reinforcement_learning {
 
     // Ensure multi comes before slots, this is a current limitation of the parser.
     RETURN_IF_FAIL(utility::validate_multi_before_slots(context_json, _trace_logger.get(), status));
-
-    std::vector<std::vector<size_t>> actions_ids;
-    std::vector<std::vector<float>> actions_pdfs;
-    std::string model_version;
-
+ 
+    std::map<size_t, std::string> found_ids;
     size_t num_decisions;
-    RETURN_IF_FAIL(utility::get_slot_count(num_decisions, context_json, _trace_logger.get(), status));
+
+    RETURN_IF_FAIL(
+        utility::get_event_ids_and_slot_count(context_json, found_ids, num_decisions, _trace_logger.get(), status));
 
     std::vector<std::string> event_ids_str(num_decisions);
     std::vector<const char*> event_ids(num_decisions, nullptr);
-    std::map<size_t, std::string> found_ids;
-    RETURN_IF_FAIL(utility::get_event_ids(context_json, found_ids, _trace_logger.get(), status));
-
     for (auto ids : found_ids)
     {
       event_ids_str[ids.first] = ids.second;
@@ -124,6 +120,10 @@ namespace reinforcement_learning {
       }
     }
 
+
+    std::vector<std::vector<size_t>> actions_ids;
+    std::vector<std::vector<float>> actions_pdfs;
+    std::string model_version;
     // This will behave correctly both before a model is loaded and after. Prior to a model being loaded it operates in explore only mode.
     RETURN_IF_FAIL(_model->request_decision(event_ids, context_json, actions_ids, actions_pdfs, model_version, status));
 
