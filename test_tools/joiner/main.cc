@@ -53,7 +53,7 @@ void parse_and_run(int argc, char** argv) {
                               "observation.fb.data" });
   }
   else if (vm["join"].as<bool>()) {
-    join_ccb("interaction.fb.data", "observation.fb.data" );
+    joiner::join("interaction.fb.data", "observation.fb.data" );
   }
   else {
     std::cout << desc << std::endl;
